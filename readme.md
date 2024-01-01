@@ -55,7 +55,7 @@
 3. rat_image_view
 4. rqt
 
-### ROS Topic을 확인 목록
+### ROS Topic에서 확인해야 하는 목록 -> code
 
 1. `<<TOPIC_NAME>>`
 2. `<ESSAGE_TYPE>>`
