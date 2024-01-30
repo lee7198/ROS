@@ -23,6 +23,7 @@ class Lane_sub:
         self.bridge = CvBridge()
         self.speed_msg = Float64()
         self.steer_msg = Float64()
+        self.cross_flage = 0
 
     def cam_CB(self, msg: CompressedImage):
         img = self.bridge.compressed_imgmsg_to_cv2(msg)
@@ -98,13 +99,23 @@ class Lane_sub:
             center_index = x // 2
             print("no line")
 
+        # detect line's edge
+        canny_img = cv2.Canny(bin_img, 2, 2)
+        line_theta = np.pi / 180
+        lines = cv2.HoughLinesP(canny_img, 0.01, line_theta, 90, 50, 5)
+        for line in lines:
+            # draw detected line
+            x1, y1, x2, y2 = line[0]
+            cv2.line(warped_img, (x1, y1), (x2, y2), (0, 255, 0), 5)
+            self.cross_flage += 1
+
         print("center index: ", center_index)
         # calc steer value
         standard_line = x // 2
         degree_per_pixel = 1 / x
         # steer = 0.5 + (((center_index - standard_line) * 0.02 / 3.2) / 2)
         steer = (center_index + standard_line) * degree_per_pixel
-        steer = steer + 0.5
+        steer += 0.5
 
         print("steer: ", Float64(steer))
         self.steer_msg.data = steer
@@ -115,7 +126,7 @@ class Lane_sub:
         # cv2.imshow("yellow_img_range", yellow_img_range)
         # cv2.imshow("white_img_range", white_img_range)
         # cv2.imshow("combined_range", combined_range)
-        # cv2.imshow("warped_img", warped_img)
+        cv2.imshow("warped_img", warped_img)
         cv2.imshow("bin_img", bin_img)
 
         cv2.waitKey(1)
