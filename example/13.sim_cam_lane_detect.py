@@ -103,12 +103,14 @@ class Lane_sub:
         canny_img = cv2.Canny(bin_img, 2, 2)
         line_theta = np.pi / 180
         lines = cv2.HoughLinesP(canny_img, 0.01, line_theta, 90, 50, 5)
-        for line in lines:
-            # draw detected line
-            x1, y1, x2, y2 = line[0]
-            cv2.line(warped_img, (x1, y1), (x2, y2), (0, 255, 0), 5)
-            self.cross_flage += 1
-
+        try:
+            for line in lines:
+                # draw detected line
+                x1, y1, x2, y2 = line[0]
+                cv2.line(warped_img, (x1, y1), (x2, y2), (0, 255, 0), 5)
+                self.cross_flage += 1
+        except:
+            pass
         print("center index: ", center_index)
         # calc steer value
         standard_line = x // 2
@@ -126,8 +128,9 @@ class Lane_sub:
         # cv2.imshow("yellow_img_range", yellow_img_range)
         # cv2.imshow("white_img_range", white_img_range)
         # cv2.imshow("combined_range", combined_range)
-        cv2.imshow("warped_img", warped_img)
-        cv2.imshow("bin_img", bin_img)
+        # cv2.imshow("warped_img", warped_img)
+        # cv2.imshow("bin_img", bin_img)
+        cv2.imshow("canny_img", canny_img)
 
         cv2.waitKey(1)
 
