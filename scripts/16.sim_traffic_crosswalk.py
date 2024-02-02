@@ -4,7 +4,7 @@
 # sub 기반 pub
 
 import rospy
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, LaserScan
 from morai_msgs.msg import GetTrafficLightStatus
 from std_msgs.msg import Float64
 from cv_bridge import CvBridge
@@ -21,6 +21,7 @@ class Traffic_control:
         rospy.Subscriber(
             "/GetTrafficLightStatus", GetTrafficLightStatus, self.traffic_CB
         )
+        rospy.Subscriber("/ladar2D", LaserScan, self.lidar_CB)
         self.speed_pub = rospy.Publisher("/commands/motor/speed", Float64, queue_size=1)
         self.steer_pub = rospy.Publisher(
             "/commands/servo/position", Float64, queue_size=1
@@ -39,6 +40,8 @@ class Traffic_control:
         self.center_index = 0
         self.standard_line = 0
         self.degree_per_pixel = 0
+        self.steer = 0.5
+        self.obastacle_flag = False
 
     def traffic_CB(self, msg: GetTrafficLightStatus):
         self.traffic_msg = msg
@@ -170,16 +173,67 @@ class Traffic_control:
 
         return center_index, standard_line, degree_per_pixel
 
+    def lidar_CB(self, msg: LaserScan):
+        # os.system("clear")
+        self.scan_msg = msg
+        self.steer = self.obastacle()
+
+    def obastacle(self):
+        degree_min = self.scan_msg.angle_min * 180 / np.pi
+        degree_max = self.scan_msg.angle_max * 180 / np.pi
+        degree_increment = self.scan_msg.angle_increment * 180 / np.pi
+
+        degrees = [
+            degree_min + degree_increment * index
+            for index, value in enumerate(self.scan_msg.ranges)  # degree values
+        ]
+        degree_array = np.array(degrees)
+        obstacle_degrees = []
+        obstacle_index = []
+        for index, value in enumerate(self.scan_msg.ranges):
+            if abs(degrees[index]) < 90 and 0 < value < 1:
+                obstacle_degrees.append(degrees[index])
+                obstacle_index.append(index)
+            else:
+                pass
+
+        print(len(obstacle_degrees))
+        print(obstacle_degrees)
+        try:
+            right_space = obstacle_index[0] - 180
+            left_space = 542 - obstacle_index[-1]
+
+            if left_space < right_space:
+                right_degree_avg = (degrees[obstacle_index[0]] + 90) / 2
+                degree_avg = right_degree_avg
+            else:
+                left_degree_avg = (degrees[obstacle_index[-1]] + 90) / 2
+                degree_avg = left_degree_avg
+            self.obastacle_flag = True
+            steer = ((-degree_avg / 90) + 0.5) / 2
+        except:
+            self.obastacle_flag = False
+            degree_avg = 0
+            steer = 0.5
+
+        return steer
+
     def action(self):
         if len(self.img) != 0:
             if self.cross_flag == True and self.signal == 1:
                 steer = 0.5
                 speed = 0
             else:
-                # steer = 0.5 + (((center_index - standard_line) * 0.02 / 3.2) / 2)
-                steer = (self.center_index + self.standard_line) * self.degree_per_pixel
-                steer += 0.5
-                speed = 1000
+                if self.obastacle_flag == True:
+                    steer = self.steer
+                    speed = 500
+                else:
+                    # steer = 0.5 + (((center_index - standard_line) * 0.02 / 3.2) / 2)
+                    steer = (
+                        self.center_index + self.standard_line
+                    ) * self.degree_per_pixel
+                    steer = 0.5 + steer * 2
+                    speed = 1000
 
             # print("steer: ", Float64(steer))
             self.steer_msg.data = steer

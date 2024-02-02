@@ -13,3 +13,7 @@
 `rviz`
 
 - 라이다 시각화로 정호 확인 가능 (미션 내 blackout, noise 구역 있음)
+
+`roslaunch pointcloud_tolaserscan point_cloud_to_laserscan.launch`
+
+- Lidar node
