@@ -1,0 +1,10 @@
+<launch>
+       
+	<node pkg="wecar_ros" type="wecar_planner.py" name="planner" args="test_path3" output="screen" />
+	<node pkg="wecar_ros" type="traffic_mission.py" name="traffic_mission" />
+	<node pkg="wecar_ros" type="dynamic_obstacle.py" name="dynamic_mission" />
+	<node pkg="wecar_ros" type="lidar2.py" name="lidar" />
+
+        <node pkg="rviz" type="rviz" name="rviz" args="-d $(find wecar_ros)/rviz/planner.rviz" />
+
+</launch>
